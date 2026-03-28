@@ -245,8 +245,11 @@
     recognition.interimResults = true;
     recognition.lang           = 'en-US';
 
-    let finalText  = '';
-    let listening  = false;
+    let finalText       = '';
+    let listening       = false;
+    let committedCount  = 0;   // guards against Chrome re-sending finalized results on restart
+
+    recognition.onstart = () => { committedCount = 0; };
 
     // ── Results ────────────────────────────────────────────────────────────
     recognition.onresult = event => {
@@ -255,7 +258,10 @@
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const chunk = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalText += chunk;
+          if (i >= committedCount) {
+            finalText += (finalText.length > 0 ? ' ' : '') + chunk.trim();
+            committedCount = i + 1;
+          }
         } else {
           interim += chunk;
         }
