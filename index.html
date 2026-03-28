@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ears</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0b1a;
+      --surface:   #13132b;
+      --border:    #2a2a4a;
+      --accent:    #6c63ff;
+      --accent2:   #a78bfa;
+      --text:      #e8e8ff;
+      --muted:     #6b6b9a;
+      --interim:   #9d9dc8;
+      --danger:    #f97316;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent2);
+    }
+
+    #status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color 0.3s;
+    }
+
+    #status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s;
+    }
+
+    #status-pill.listening { color: #4ade80; }
+    #status-pill.listening #status-dot {
+      background: #4ade80;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.75); }
+    }
+
+    /* ── Transcript area ── */
+    #transcript-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    #transcript {
+      font-size: clamp(1.3rem, 3vw, 2rem);
+      line-height: 1.65;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 3em;
+    }
+
+    #interim {
+      font-size: clamp(1.3rem, 3vw, 2rem);
+      line-height: 1.65;
+      color: var(--interim);
+      font-style: italic;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 1.65em;
+    }
+
+    #placeholder {
+      font-size: 1.1rem;
+      color: var(--muted);
+      font-style: italic;
+      position: absolute;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    /* ── Controls ── */
+    footer {
+      flex-shrink: 0;
+      padding: 20px 28px 28px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    button {
+      cursor: pointer;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 12px 24px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+      letter-spacing: 0.04em;
+    }
+
+    button:hover { background: rgba(255,255,255,0.06); }
+
+    #btn-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    #btn-toggle:hover { background: #5a52e0; border-color: #5a52e0; }
+
+    #btn-toggle.active {
+      background: transparent;
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    #btn-toggle.active:hover { background: rgba(249,115,22,0.1); }
+
+    #btn-clear { color: var(--muted); font-size: 0.85rem; }
+
+    /* Mic icon */
+    .mic-icon { width: 20px; height: 20px; flex-shrink: 0; }
+
+    /* ── Not supported banner ── */
+    #unsupported {
+      display: none;
+      background: rgba(249,115,22,0.15);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      border-radius: 10px;
+      padding: 14px 20px;
+      margin: 20px 28px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Scrollbar */
+    #transcript-wrap::-webkit-scrollbar { width: 6px; }
+    #transcript-wrap::-webkit-scrollbar-track { background: transparent; }
+    #transcript-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Ears</h1>
+    <div id="status-pill">
+      <div id="status-dot"></div>
+      <span id="status-text">Stopped</span>
+    </div>
+  </header>
+
+  <div id="unsupported">
+    Your browser does not support the Web Speech API. Please use Chrome or Edge.
+  </div>
+
+  <div id="transcript-wrap">
+    <div id="placeholder">Press Start and begin speaking...</div>
+    <div id="transcript"></div>
+    <div id="interim"></div>
+  </div>
+
+  <footer>
+    <button id="btn-toggle">
+      <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8"  y1="23" x2="16" y2="23"/>
+      </svg>
+      Start Listening
+    </button>
+    <button id="btn-clear">Clear</button>
+  </footer>
+
+<script>
+  const elTranscript = document.getElementById('transcript');
+  const elInterim    = document.getElementById('interim');
+  const elPlaceholder = document.getElementById('placeholder');
+  const elBtnToggle  = document.getElementById('btn-toggle');
+  const elBtnClear   = document.getElementById('btn-clear');
+  const elStatusPill = document.getElementById('status-pill');
+  const elStatusText = document.getElementById('status-text');
+  const elUnsupported = document.getElementById('unsupported');
+  const elWrap       = document.getElementById('transcript-wrap');
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    elUnsupported.style.display = 'block';
+    elBtnToggle.disabled = true;
+  } else {
+    const recognition = new SpeechRecognition();
+    recognition.continuous     = true;
+    recognition.interimResults = true;
+    recognition.lang           = 'en-US';
+
+    let finalText  = '';
+    let listening  = false;
+
+    // ── Results ────────────────────────────────────────────────────────────
+    recognition.onresult = event => {
+      let interim = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const chunk = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalText += chunk;
+        } else {
+          interim += chunk;
+        }
+      }
+
+      elTranscript.textContent = finalText;
+      elInterim.textContent    = interim;
+      elPlaceholder.style.opacity = finalText || interim ? '0' : '1';
+      scrollToBottom();
+    };
+
+    // ── Auto-restart on end (browser stops after ~60 s of silence) ─────────
+    recognition.onend = () => {
+      if (listening) recognition.start();
+    };
+
+    recognition.onerror = event => {
+      // 'no-speech' is harmless — browser just timed out, onend will restart
+      if (event.error === 'not-allowed') {
+        setListening(false);
+        elUnsupported.textContent = 'Microphone access was denied. Please allow microphone access and try again.';
+        elUnsupported.style.display = 'block';
+      }
+    };
+
+    // ── Toggle ──────────────────────────────────────────────────────────────
+    function setListening(on) {
+      listening = on;
+      elBtnToggle.classList.toggle('active', on);
+      elBtnToggle.innerHTML = on
+        ? `<svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+             <line x1="1" y1="1" x2="23" y2="23"/>
+             <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+             <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+             <line x1="12" y1="19" x2="12" y2="23"/>
+             <line x1="8"  y1="23" x2="16" y2="23"/>
+           </svg> Stop Listening`
+        : `<svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+             <line x1="12" y1="19" x2="12" y2="23"/>
+             <line x1="8"  y1="23" x2="16" y2="23"/>
+           </svg> Start Listening`;
+      elStatusPill.classList.toggle('listening', on);
+      elStatusText.textContent = on ? 'Listening' : 'Stopped';
+      if (!on) elInterim.textContent = '';
+    }
+
+    elBtnToggle.addEventListener('click', () => {
+      if (listening) {
+        listening = false;        // prevent onend restart
+        recognition.stop();
+        setListening(false);
+      } else {
+        recognition.start();
+        setListening(true);
+      }
+    });
+
+    // ── Clear ───────────────────────────────────────────────────────────────
+    elBtnClear.addEventListener('click', () => {
+      finalText = '';
+      elTranscript.textContent = '';
+      elInterim.textContent    = '';
+      elPlaceholder.style.opacity = '1';
+    });
+
+    function scrollToBottom() {
+      elWrap.scrollTop = elWrap.scrollHeight;
+    }
+  }
+</script>
+</body>
+</html>
